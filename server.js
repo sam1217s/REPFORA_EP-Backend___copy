@@ -13,6 +13,7 @@ import { routerNew } from "./routes/new.route.js"
 import { routerLog } from "./routes/log.route.js";
 import { routerParameter } from "./routes/parameter.route.js";
 import { routerRegistration } from "./routes/registration.route.js";
+import { routerProgram } from "./routes/program.route.js";
 
 
 const app = express();
@@ -38,7 +39,7 @@ app.use("/api/news", routerNew)
 app.use("/api/logs", routerLog)
 app.use("/api/parameters", routerParameter)
 app.use("/api/registrations", routerRegistration)
-
+app.use('/api/programs', routerProgram);
 
 
 app.listen(process.env.PORT, () => {

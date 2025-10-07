@@ -1,0 +1,1720 @@
+{
+	"info": {
+		"_postman_id": "cef79cf1-0377-4286-893f-f8fcf31b76cb",
+		"name": "REPFORA EP - API Documentation",
+		"description": "# 📚 Documentación API REPFORA EP\n\n## 🎯 Descripción General\nAPI REST para el sistema de gestión de Etapas Productivas (EP) del SENA. Permite gestionar aprendices, instructores, empresas, modalidades, registros de EP y más.\n\n## 🔐 Autenticación\nLa API utiliza JWT (JSON Web Tokens) para autenticación.\n\n### Roles de Usuario:\n- **APRENDIZ**: Estudiante que realiza la etapa productiva\n- **INSTRUCTOR**: Instructor que supervisa\n- **ETAPA PRODUCTIVA VIRTUAL**: Coordinador modalidad virtual\n- **ETAPA PRODUCTIVA PRESENCIAL**: Coordinador modalidad presencial\n\n### Headers Requeridos:\n```\nx-token: {JWT_TOKEN}\n```\n\n## 🚀 Configuración Inicial\n\n### Variables de Colección:\n- `base_url`: URL base del API local (http://localhost:5000/api)\n- `base_url_desplegado`: URL del API en producción\n- `token_aprendiz`: Token JWT del aprendiz (se actualiza automáticamente al hacer login)\n- `token_instructor`: Token JWT del instructor (se actualiza automáticamente al hacer login)\n- `token_admin`: Token JWT del administrador (se actualiza automáticamente al hacer login)\n\n## 📝 Códigos de Estado\n- `200`: Operación exitosa\n- `201`: Recurso creado exitosamente\n- `400`: Error en la solicitud (validación)\n- `401`: No autenticado o token inválido\n- `403`: No autorizado (permisos insuficientes)\n- `404`: Recurso no encontrado\n- `500`: Error interno del servidor\n\n## 🔄 Flujo Típico\n1. Hacer login con credenciales (Admin, Instructor o Aprendiz)\n2. El token se guarda automáticamente en las variables de colección\n3. Usar el token en los siguientes requests\n4. El token expira en 48 horas\n\n---\n\n**Versión**: 1.0.0\n**Última actualización**: Octubre 2025",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43573863"
+	},
+	"item": [
+		{
+			"name": "🎓 APPRENTICES (Aprendices)",
+			"description": "Endpoints para gestión de aprendices/estudiantes del SENA.\n\n**Permisos**:\n- Crear/Listar/Actualizar: ADMIN, INSTRUCTOR\n- Login: Público\n- Actualizar datos propios: APRENDIZ\n- Activar/Desactivar: ADMIN\n\n**Campos importantes**:\n- `documentNumber`: Número de documento único\n- `documentType`: Tipo de documento (CC, TI, CE, etc.)\n- `recordNumber`: Array con fichas asociadas\n- `email.institutional`: Email institucional @sena.edu.co\n- `email.personal`: Email personal\n- `status`: 0=Activo, 1=Inactivo",
+			"item": [
+				{
+					"name": "LOGIN Aprendiz",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Guardar el token automáticamente",
+									"let response = pm.response.json();",
+									"if (response.token) {",
+									"    pm.collectionVariables.set(\"token_aprendiz\", response.token);",
+									"    pm.test(\"Token guardado exitosamente\", function () {",
+									"        pm.expect(response.token).to.be.a('string');",
+									"    });",
+									"}",
+									"",
+									"pm.test(\"Status code es 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta contiene token\", function () {",
+									"    pm.expect(response).to.have.property('token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"documentType\": \"CC\",\n  \"documentNumber\": \"100001\", \n  \"password\": \"100001\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/apprentices/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"login"
+							]
+						},
+						"description": "### 🔐 Login de Aprendiz\n\nPermite autenticar a un aprendiz en el sistema.\n\n**Método**: POST\n**Autenticación**: No requiere\n**Permisos**: Público\n\n#### 📥 Request Body:\n```json\n{\n  \"documentType\": \"CC\",        // Tipo de documento\n  \"documentNumber\": \"100001\",  // Número de documento\n  \"password\": \"100001\"          // Contraseña\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"ususario logueado correctamente\",\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}\n```\n\n#### ⚠️ Errores Comunes:\n- **400**: Credenciales incorrectas\n- **401**: Usuario inactivo\n- **404**: Usuario no existe\n\n#### 💡 Nota:\nEl token se guarda automáticamente en la variable `token_aprendiz` y expira en 48 horas."
+					},
+					"response": []
+				},
+				{
+					"name": "REGISTRAR Aprendiz",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text",
+								"description": "Token de autenticación del administrador"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"documentNumber\": \"123456789\",\n  \"documentType\": \"CC\",\n  \"recordNumber\": [\n    {\n      \"fiche\": \"2926076\"\n    }\n  ],\n  \"firstName\": \"Juan\",\n  \"lastName\": \"Pérez\",\n  \"email\": {\n    \"institutional\": \"jperez@sena.edu.co\",\n    \"personal\": \"juan.perez@gmail.com\"\n  },\n  \"phone\": \"3001234567\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/apprentices/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"register"
+							]
+						},
+						"description": "### ➕ Registrar Nuevo Aprendiz\n\nCrea un nuevo aprendiz en el sistema.\n\n**Método**: POST\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN, INSTRUCTOR OWNER\n\n#### 📥 Request Body:\n```json\n{\n  \"documentNumber\": \"123456789\",       // Requerido, único\n  \"documentType\": \"CC\",                 // Requerido (CC, TI, CE, etc.)\n  \"recordNumber\": [                     // Requerido, array de fichas\n    {\n      \"fiche\": \"2926076\"                // Número de ficha existente\n    }\n  ],\n  \"firstName\": \"Juan\",                  // Requerido\n  \"lastName\": \"Pérez\",                  // Requerido\n  \"email\": {\n    \"institutional\": \"jperez@sena.edu.co\",  // Requerido, único\n    \"personal\": \"juan.perez@gmail.com\"       // Requerido, único\n  },\n  \"phone\": \"3001234567\"                // Requerido\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"message\": \"Aprendiz guardado con éxito\"\n}\n```\n\n#### ⚠️ Validaciones:\n- Documento único en el sistema\n- Emails únicos (institucional y personal)\n- La ficha debe existir en el sistema\n- Todos los campos son obligatorios\n\n#### 💡 Notas:\n- La contraseña inicial será el número de documento\n- El aprendiz se crea en estado activo (status: 0)\n- Se registra automáticamente en el log de auditoría"
+					},
+					"response": []
+				},
+				{
+					"name": "LISTAR Aprendices",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/apprentices/listApprentice?recordNumber=2926076&documentNumber=123456789",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"listApprentice"
+							],
+							"query": [
+								{
+									"key": "recordNumber",
+									"value": "2926076",
+									"description": "Filtrar por número de ficha"
+								},
+								{
+									"key": "documentNumber",
+									"value": "123456789",
+									"description": "Filtrar por número de documento"
+								}
+							]
+						},
+						"description": "### 📋 Listar Aprendices\n\nObtiene una lista de aprendices con filtros opcionales.\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN, INSTRUCTOR OWNER\n\n#### 🔍 Query Parameters (Opcionales):\n- `recordNumber`: Filtra por número de ficha\n- `documentNumber`: Filtra por número de documento\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": [\n    {\n      \"_id\": \"68db0ea84fbe82bc4d10eff4\",\n      \"documentNumber\": \"123456789\",\n      \"documentType\": \"CC\",\n      \"firstName\": \"JUAN\",\n      \"lastName\": \"PÉREZ\",\n      \"email\": {\n        \"institutional\": \"JPEREZ@SENA.EDU.CO\",\n        \"personal\": \"JUAN.PEREZ@GMAIL.COM\"\n      },\n      \"phone\": \"3001234567\",\n      \"status\": 0,\n      \"recordNumber\": [\n        {\n          \"fiche\": {\n            \"_id\": \"...\",\n            \"number\": \"2926076\",\n            \"program\": {...}\n          }\n        }\n      ],\n      \"createdAt\": \"2025-10-02T18:12:02.016Z\",\n      \"updatedAt\": \"2025-10-03T22:35:10.969Z\"\n    }\n  ]\n}\n```\n\n#### 💡 Notas:\n- Sin filtros, devuelve todos los aprendices\n- Los resultados incluyen populate de fichas\n- Ordenados por fecha de creación (más antiguos primero)"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTUALIZAR Aprendiz (Parcial)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_aprendiz}}",
+								"type": "text",
+								"description": "Token del aprendiz autenticado"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"3009998888\",\n  \"email\": \"nuevo.email@gmail.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/apprentices/updatePartApprentice/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"updatePartApprentice",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68db0ea84fbe82bc4d10eff4",
+									"description": "ID del aprendiz"
+								}
+							]
+						},
+						"description": "### ✏️ Actualizar Datos Propios del Aprendiz\n\nPermite al aprendiz actualizar su teléfono y email personal.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: APRENDIZ (solo puede actualizar sus propios datos)\n\n#### 📥 Request Body:\n```json\n{\n  \"phone\": \"3009998888\",                    // Requerido\n  \"email\": \"nuevo.email@gmail.com\"          // Email personal, requerido\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"actualizado correctamente\"\n}\n```\n\n#### ⚠️ Validaciones:\n- El ID debe ser válido y existir\n- El email no debe estar en uso por otro aprendiz\n- Solo puede actualizar sus propios datos\n\n#### 💡 Notas:\n- Solo actualiza teléfono y email personal\n- El email institucional NO se puede cambiar\n- Se registra en el log de auditoría"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTUALIZAR Aprendiz (Completo)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"documentNumber\": \"987654321\",\n  \"documentType\": \"CC\",\n  \"firstName\": \"María\",\n  \"lastName\": \"Gómez\",\n  \"email\": {\n    \"personal\": \"maria.gomez@gmail.com\",\n    \"institutional\": \"mgomez@sena.edu.co\"\n  },\n  \"phone\": \"3004567890\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/apprentices/updateEntireApprentice/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"updateEntireApprentice",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68d8ae5f1af8e60eb33cbe9c"
+								}
+							]
+						},
+						"description": "### 🔄 Actualizar Aprendiz Completo\n\nPermite actualizar todos los datos de un aprendiz (solo administradores).\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📥 Request Body:\n```json\n{\n  \"documentNumber\": \"987654321\",          // Todos los campos\n  \"documentType\": \"CC\",                    // son requeridos\n  \"firstName\": \"María\",\n  \"lastName\": \"Gómez\",\n  \"email\": {\n    \"personal\": \"maria.gomez@gmail.com\",\n    \"institutional\": \"mgomez@sena.edu.co\"\n  },\n  \"phone\": \"3004567890\"\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Aprendiz actualizado correctamente\"\n}\n```\n\n#### 💡 Diferencia con actualización parcial:\n- Permite actualizar TODOS los campos\n- Requiere permisos de ADMIN\n- Se pueden cambiar documentos y emails institucionales"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTIVAR Aprendiz",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/apprentices/activateApprentice/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"activateApprentice",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68db0ea84fbe82bc4d10eff4"
+								}
+							]
+						},
+						"description": "### ✅ Activar Aprendiz\n\nCambia el estado del aprendiz a activo (status: 0).\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Estado del aprendiz activado\"\n}\n```\n\n#### 💡 Efectos:\n- Cambia `status` a 0 (activo)\n- El aprendiz puede hacer login\n- Se registra en el log de auditoría"
+					},
+					"response": []
+				},
+				{
+					"name": "DESACTIVAR Aprendiz",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/apprentices/disableApprentice/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"disableApprentice",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68db0ea84fbe82bc4d10eff4"
+								}
+							]
+						},
+						"description": "### ❌ Desactivar Aprendiz\n\nCambia el estado del aprendiz a inactivo (status: 1).\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Estado del aprendiz desactivado\"\n}\n```\n\n#### 💡 Efectos:\n- Cambia `status` a 1 (inactivo)\n- El aprendiz NO puede hacer login\n- Los datos se conservan (no se eliminan)\n- Se registra en el log de auditoría"
+					},
+					"response": []
+				},
+				{
+					"name": "ELIMINAR Aprendiz",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/apprentices/deleteApprentice/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"deleteApprentice",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68daf42d078f79fd73fd614a"
+								}
+							]
+						},
+						"description": "### 🗑️ Eliminar Aprendiz\n\nElimina permanentemente un aprendiz del sistema.\n\n**Método**: DELETE\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Aprendiz eliminado\"\n}\n```\n\n#### ⚠️ ADVERTENCIA:\n- Esta acción es PERMANENTE\n- Se elimina completamente de la base de datos\n- Considerar usar DESACTIVAR en lugar de eliminar\n- No se puede recuperar después de eliminar"
+					},
+					"response": []
+				},
+				{
+					"name": "SOLICITAR Código Restablecer Contraseña",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_aprendiz}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/apprentices/resetPassword/:email",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"resetPassword",
+								":email"
+							],
+							"variable": [
+								{
+									"key": "email",
+									"value": "juan.perez@gmail.com",
+									"description": "Email institucional o personal"
+								}
+							]
+						},
+						"description": "### 📧 Solicitar Código para Restablecer Contraseña\n\nEnvía un código de 6 dígitos al email del aprendiz.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: APRENDIZ, ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Email enviado correctamente\"\n}\n```\n\n#### 💡 Funcionamiento:\n1. Se genera un código aleatorio de 6 dígitos\n2. El código es válido por 20 minutos\n3. Se envía por email al aprendiz\n4. El código se guarda en `codeResetPassword`\n5. El tiempo de expiración en `codeTime`\n\n#### ⚠️ Notas:\n- El email puede ser institucional o personal\n- El código expira en 20 minutos\n- Solo se puede tener un código activo a la vez"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTUALIZAR Contraseña con Código",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_aprendiz}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"codeResetPassword\": \"123456\",\n  \"newpassword\": \"nuevaContraseña123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/apprentices/updatePassword/:email",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"updatePassword",
+								":email"
+							],
+							"variable": [
+								{
+									"key": "email",
+									"value": "juan.perez@gmail.com"
+								}
+							]
+						},
+						"description": "### 🔑 Actualizar Contraseña con Código\n\nPermite cambiar la contraseña usando el código de verificación.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: APRENDIZ, ADMIN\n\n#### 📥 Request Body:\n```json\n{\n  \"codeResetPassword\": \"123456\",           // Código recibido por email\n  \"newpassword\": \"nuevaContraseña123\"      // Nueva contraseña\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Contraseña Actualizado\"\n}\n```\n\n#### ⚠️ Validaciones:\n- El código debe ser válido y no expirado\n- El código expira en 20 minutos\n- Después de usar el código, se invalida automáticamente\n\n#### 💡 Proceso completo:\n1. Solicitar código (endpoint anterior)\n2. Recibir código por email\n3. Usar este endpoint con el código\n4. La contraseña se actualiza y el código se invalida"
+					},
+					"response": []
+				},
+				{
+					"name": "CARGUE MASIVO de Aprendices",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "archivo",
+									"type": "file",
+									"src": "/C:/Users/Aprendiz/Downloads/apprentices.csv",
+									"description": "Archivo CSV con datos de aprendices"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/apprentices/loadMassiveApprentice",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"apprentices",
+								"loadMassiveApprentice"
+							]
+						},
+						"description": "### 📤 Cargue Masivo de Aprendices\n\nPermite cargar múltiples aprendices desde un archivo CSV.\n\n**Método**: POST\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN, INSTRUCTOR OWNER\n**Content-Type**: multipart/form-data\n\n#### 📄 Formato del CSV:\n```csv\ndocumentNumber;documentType;recordNumber;firstName;lastName;emailInstitutional;emailPersonal;phone;password\n123456789;CC;2926076;Juan;Pérez;jperez@sena.edu.co;juan@gmail.com;3001234567;\n987654321;CC;2926076;María;Gómez;mgomez@sena.edu.co;maria@gmail.com;3009876543;\n```\n\n#### 🔍 Campos del CSV:\n1. **documentNumber**: Número de documento\n2. **documentType**: Tipo de documento (CC, TI, CE)\n3. **recordNumber**: Número de ficha\n4. **firstName**: Nombres\n5. **lastName**: Apellidos\n6. **emailInstitutional**: Email institucional\n7. **emailPersonal**: Email personal\n8. **phone**: Teléfono\n9. **password**: Se puede dejar vacío (usará el documento)\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Aprendiz o aprendices guardados\"\n}\n```\n\n#### ⚠️ Validaciones:\n- Primera línea debe ser el encabezado\n- Todos los documentos deben ser únicos\n- Todos los emails deben ser únicos\n- La ficha debe existir\n- Si un registro falla, no se guarda ninguno\n\n#### 💡 Notas:\n- Delimitador: punto y coma (;)\n- Contraseña por defecto: número de documento\n- Todos se crean en estado activo\n- El archivo se elimina después del procesamiento"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "👨‍🏫 INSTRUCTORS (Instructores)",
+			"description": "Endpoints para gestión de instructores del SENA.\n\n**Permisos**:\n- Login: Público\n- Otros endpoints: En desarrollo\n\n**Roles de instructor**:\n- Instructor de seguimiento\n- Instructor técnico\n- Instructor de proyecto",
+			"item": [
+				{
+					"name": "LOGIN Instructor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let response = pm.response.json();",
+									"if (response.token) {",
+									"    pm.collectionVariables.set(\"token_instructor\", response.token);",
+									"}",
+									"",
+									"pm.test(\"Status code es 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta contiene token\", function () {",
+									"    pm.expect(response).to.have.property('token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"document\": \"99887767\",\n  \"password\": \"12345678\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/instructors/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"instructors",
+								"login"
+							]
+						},
+						"description": "### 🔐 Login de Instructor\n\nPermite autenticar a un instructor en el sistema.\n\n**Método**: POST\n**Autenticación**: No requiere\n**Permisos**: Público\n\n#### 📥 Request Body:\n```json\n{\n  \"document\": \"99887767\",     // Número de documento del instructor\n  \"password\": \"12345678\"       // Contraseña\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Usuario logueado correctamente\",\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}\n```\n\n#### ⚠️ Errores Comunes:\n- **400**: Credenciales incorrectas\n- **401**: Instructor inactivo\n- **404**: Instructor no existe\n\n#### 💡 Nota:\nEl token se guarda automáticamente en `token_instructor`."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "👔 ADMINS (Usuarios/Coordinadores)",
+			"description": "Endpoints para gestión de usuarios administradores.\n\n**Roles disponibles**:\n- **ETAPA PRODUCTIVA VIRTUAL**: Coordinador modalidad virtual\n- **ETAPA PRODUCTIVA PRESENCIAL**: Coordinador modalidad presencial\n\n**Permisos**:\nMáximo nivel de acceso en el sistema.",
+			"item": [
+				{
+					"name": "LOGIN Admin/Coordinador",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let response = pm.response.json();",
+									"if (response.token) {",
+									"    pm.collectionVariables.set(\"token_admin\", response.token);",
+									"}",
+									"",
+									"pm.test(\"Status code es 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta contiene datos completos\", function () {",
+									"    pm.expect(response).to.have.property('token');",
+									"    pm.expect(response).to.have.property('role');",
+									"    pm.expect(response).to.have.property('name');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"ETAPA PRODUCTIVA VIRTUAL\",\n  \"email\": \"etapaspruebas@gmail.com\",\n  \"password\": \"12345678\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/users/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"login"
+							]
+						},
+						"description": "### 🔐 Login de Administrador/Coordinador\n\nPermite autenticar a usuarios administradores (coordinadores de EP).\n\n**Método**: POST\n**Autenticación**: No requiere\n**Permisos**: Público\n\n#### 📥 Request Body:\n```json\n{\n  \"role\": \"ETAPA PRODUCTIVA VIRTUAL\",        // Rol requerido\n  \"email\": \"coordinador@gmail.com\",          // Email del usuario\n  \"password\": \"12345678\"                      // Contraseña\n}\n```\n\n#### 🎭 Roles Válidos:\n- `ETAPA PRODUCTIVA VIRTUAL`\n- `ETAPA PRODUCTIVA PRESENCIAL`\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Usuario logueado correctamente\",\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"email\": \"coordinador@gmail.com\",\n  \"role\": \"ETAPA PRODUCTIVA VIRTUAL\",\n  \"name\": \"Juan Pérez\"\n}\n```\n\n#### ⚠️ Validaciones:\n- El rol debe ser válido y coincidir con el usuario\n- El email debe existir en el sistema\n- La contraseña debe ser correcta\n- El usuario debe estar activo\n\n#### 💡 Nota:\n- El token se guarda automáticamente en `token_admin`\n- Los coordinadores tienen acceso completo al sistema\n- Pueden gestionar aprendices, instructores, empresas, etc."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🏢 COMPANIES (Empresas)",
+			"description": "Endpoints para gestión de empresas donde se realizan las etapas productivas.\n\n**Permisos**:\n- Crear/Listar/Actualizar: ADMIN\n- Activar/Desactivar: ADMIN\n\n**Campos importantes**:\n- `company_nit`: NIT de la empresa (único)\n- `name`: Nombre de la empresa\n- `location`: Ubicación/ciudad\n- `legal_representative_*`: Datos del representante legal\n- `status`: 0=Activa, 1=Inactiva",
+			"item": [
+				{
+					"name": "CREAR Empresa",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"company_nit\": \"900123456-7\",\n  \"name\": \"Tech Solutions S.A.S.\",\n  \"location\": \"Bogotá, Colombia\",\n  \"legal_representative_phone\": \"+57 3101234567\",\n  \"legal_representative_name\": \"Juan Pérez\",\n  \"legal_representative_email\": \"juan.perez@techsolutions.com\",\n  \"legal_representative_position\": \"Gerente General\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/companies/saveCompanies",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								"saveCompanies"
+							]
+						},
+						"description": "### ➕ Crear Nueva Empresa\n\nRegistra una nueva empresa en el sistema.\n\n**Método**: POST\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📥 Request Body:\n```json\n{\n  \"company_nit\": \"900123456-7\",                           // Requerido, único\n  \"name\": \"Tech Solutions S.A.S.\",                        // Requerido\n  \"location\": \"Bogotá, Colombia\",                         // Requerido\n  \"legal_representative_phone\": \"+57 3101234567\",         // Requerido\n  \"legal_representative_name\": \"Juan Pérez\",              // Requerido\n  \"legal_representative_email\": \"juan@techsolutions.com\", // Requerido, email válido\n  \"legal_representative_position\": \"Gerente General\"      // Requerido\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Compañia creada correctamente\"\n}\n```\n\n#### ⚠️ Validaciones:\n- El NIT debe ser único\n- El email debe tener formato válido\n- Todos los campos son obligatorios\n- Los textos se guardan en mayúsculas\n\n#### 💡 Notas:\n- La empresa se crea en estado activo por defecto\n- Los datos del representante legal son importantes para documentos oficiales"
+					},
+					"response": []
+				},
+				{
+					"name": "LISTAR Empresas",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/companies/listCompanies",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								"listCompanies"
+							]
+						},
+						"description": "### 📋 Listar Empresas\n\nObtiene todas las empresas registradas.\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": [\n    {\n      \"_id\": \"68e2ce2caf5b6c3d172f3944\",\n      \"company_nit\": \"900123456-7\",\n      \"name\": \"TECH SOLUTIONS S.A.S.\",\n      \"location\": \"BOGOTÁ, COLOMBIA\",\n      \"legal_representative_phone\": \"+57 3101234567\",\n      \"legal_representative_name\": \"JUAN PÉREZ\",\n      \"legal_representative_email\": \"juan.perez@techsolutions.com\",\n      \"legal_representative_position\": \"GERENTE GENERAL\",\n      \"status\": 0,\n      \"createdAt\": \"2025-10-01T10:00:00.000Z\",\n      \"updatedAt\": \"2025-10-01T10:00:00.000Z\"\n    }\n  ]\n}\n```\n\n#### 💡 Notas:\n- Ordenadas por fecha de creación (más antiguas primero)\n- Incluye empresas activas e inactivas\n- Los textos están en mayúsculas"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTUALIZAR Empresa",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"company_nit\": \"900123456-7\",\n  \"name\": \"Tech Solutions Colombia S.A.S.\",\n  \"location\": \"Medellín, Colombia\",\n  \"legal_representative_phone\": \"+57 3101234567\",\n  \"legal_representative_name\": \"Juan Pérez Gómez\",\n  \"legal_representative_email\": \"juan.perez@techsolutions.com\",\n  \"legal_representative_position\": \"CEO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/companies/updateCompanies/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								"updateCompanies",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e2ce2caf5b6c3d172f3944"
+								}
+							]
+						},
+						"description": "### ✏️ Actualizar Empresa\n\nActualiza los datos de una empresa existente.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📥 Request Body:\nTodos los campos son requeridos (mismo formato que crear).\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Compañia actualizada\"\n}\n```\n\n#### ⚠️ Validaciones:\n- El ID debe existir\n- Si se cambia el NIT, el nuevo debe ser único\n- Todos los campos son obligatorios"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTIVAR Empresa",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/companies/activeCompanies/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								"activeCompanies",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e2ce2caf5b6c3d172f3944"
+								}
+							]
+						},
+						"description": "### ✅ Activar Empresa\n\nCambia el estado de la empresa a activa.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Empresa activada correctamente\"\n}\n```\n\n#### 💡 Efectos:\n- Cambia `status` a 0\n- La empresa puede ser asignada a registros EP"
+					},
+					"response": []
+				},
+				{
+					"name": "DESACTIVAR Empresa",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/companies/inactiveCompanies/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								"inactiveCompanies",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e2ce2caf5b6c3d172f3944"
+								}
+							]
+						},
+						"description": "### ❌ Desactivar Empresa\n\nCambia el estado de la empresa a inactiva.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Empresa desactivada correctamente\"\n}\n```\n\n#### 💡 Efectos:\n- Cambia `status` a 1\n- No se puede asignar a nuevos registros EP\n- Los registros existentes no se afectan"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📚 MODALITIES (Modalidades EP)",
+			"description": "Endpoints para gestión de modalidades de etapa productiva.\n\n**Modalidades comunes**:\n- Contrato de aprendizaje\n- Vinculación laboral\n- Proyecto productivo\n- Monitoría\n- Unidad productiva familiar\n\n**Permisos**:\n- Crear/Actualizar/Eliminar: ADMIN\n- Listar: ADMIN, APRENDIZ\n- Activar/Desactivar: ADMIN",
+			"item": [
+				{
+					"name": "CREAR Modalidad",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"CONTRATO DE APRENDIZAJE\",\n  \"description\": \"Modalidad de contrato de aprendizaje en empresa\",\n  \"standard_hours\": 864,\n  \"requires_follow_up_instructor\": 1,\n  \"requires_technical_instructor\": 1,\n  \"requires_project_instructor\": 0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/modalities/saveModalities",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"modalities",
+								"saveModalities"
+							]
+						},
+						"description": "### ➕ Crear Nueva Modalidad\n\nRegistra una nueva modalidad de etapa productiva.\n\n**Método**: POST\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📥 Request Body:\n```json\n{\n  \"name\": \"CONTRATO DE APRENDIZAJE\",                      // Requerido, único\n  \"description\": \"Modalidad de contrato...\",              // Requerido\n  \"standard_hours\": 864,                                   // Requerido, horas estándar\n  \"requires_follow_up_instructor\": 1,                      // 0 o 1 (boolean)\n  \"requires_technical_instructor\": 1,                      // 0 o 1\n  \"requires_project_instructor\": 0                         // 0 o 1\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Modalidad creada correctamente\"\n}\n```\n\n#### ⚠️ Validaciones:\n- El nombre debe ser único\n- Todos los campos son obligatorios\n- Los valores booleanos deben ser 0 o 1\n- standard_hours debe ser numérico\n\n#### 💡 Notas:\n- El nombre se guarda en mayúsculas\n- Los campos `requires_*` determinan qué instructores se necesitan\n- Se crea en estado activo por defecto"
+					},
+					"response": []
+				},
+				{
+					"name": "LISTAR Modalidades",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/modalities/listModalities?name=CONTRATO&requires_follow_up_instructor=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"modalities",
+								"listModalities"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "CONTRATO",
+									"description": "Filtrar por nombre"
+								},
+								{
+									"key": "requires_follow_up_instructor",
+									"value": "1",
+									"description": "Filtrar por instructor de seguimiento"
+								},
+								{
+									"key": "requires_technical_instructor",
+									"value": "1",
+									"description": "Filtrar por instructor técnico",
+									"disabled": true
+								},
+								{
+									"key": "requires_project_instructor",
+									"value": "0",
+									"description": "Filtrar por instructor de proyecto",
+									"disabled": true
+								}
+							]
+						},
+						"description": "### 📋 Listar Modalidades\n\nObtiene lista de modalidades con filtros opcionales.\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN, APRENDIZ\n\n#### 🔍 Query Parameters (Opcionales):\n- `name`: Buscar por nombre (case insensitive)\n- `requires_follow_up_instructor`: 0 o 1\n- `requires_technical_instructor`: 0 o 1\n- `requires_project_instructor`: 0 o 1\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": [\n    {\n      \"_id\": \"68d4a43ea3d837b79a47523a\",\n      \"name\": \"CONTRATO DE APRENDIZAJE\",\n      \"description\": \"MODALIDAD DE CONTRATO...\",\n      \"standard_hours\": 864,\n      \"requires_follow_up_instructor\": 1,\n      \"requires_technical_instructor\": 1,\n      \"requires_project_instructor\": 0,\n      \"status\": 0,\n      \"createdAt\": \"2025-09-20T...\",\n      \"updatedAt\": \"2025-09-20T...\"\n    }\n  ]\n}\n```\n\n#### 💡 Notas:\n- Sin filtros, devuelve todas las modalidades\n- Ordenadas por fecha de creación (más recientes primero)\n- Los aprendices pueden ver solo para elegir al registrarse"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTUALIZAR Modalidad",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"CONTRATO DE APRENDIZAJE EMPRESARIAL\",\n  \"description\": \"Modalidad actualizada de contrato\",\n  \"standard_hours\": 880,\n  \"requires_follow_up_instructor\": 1,\n  \"requires_technical_instructor\": 1,\n  \"requires_project_instructor\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/modalities/updateModalities/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"modalities",
+								"updateModalities",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68d4a43ea3d837b79a47523a"
+								}
+							]
+						},
+						"description": "### ✏️ Actualizar Modalidad\n\nActualiza una modalidad existente.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📥 Request Body:\nTodos los campos son requeridos (mismo formato que crear).\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Modalidad actualizada correctamente\"\n}\n```\n\n#### ⚠️ Validaciones:\n- El ID debe existir\n- Si se cambia el nombre, el nuevo debe ser único\n- Todos los campos obligatorios"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTIVAR Modalidad",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/modalities/activeModalities/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"modalities",
+								"activeModalities",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68d4a43ea3d837b79a47523a"
+								}
+							]
+						},
+						"description": "### ✅ Activar Modalidad\n\nCambia el estado de la modalidad a activa.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Modalidad activada correctamente\"\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "DESACTIVAR Modalidad",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/modalities/inactiveModalities/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"modalities",
+								"inactiveModalities",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68d4a43ea3d837b79a47523a"
+								}
+							]
+						},
+						"description": "### ❌ Desactivar Modalidad\n\nCambia el estado de la modalidad a inactiva.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Modalidad desactivada correctamente\"\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "ELIMINAR Modalidad",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/modalities/deleteModalities/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"modalities",
+								"deleteModalities",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68d4a3fa69c8ef0c8f5eaacc"
+								}
+							]
+						},
+						"description": "### 🗑️ Eliminar Modalidad\n\nElimina permanentemente una modalidad.\n\n**Método**: DELETE\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Modalidad eliminada correctamente\"\n}\n```\n\n#### ⚠️ ADVERTENCIA:\n- Acción permanente\n- No eliminar modalidades en uso\n- Considerar desactivar en lugar de eliminar"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📚 PROGRAMS (Programas de Formación)",
+			"description": "Endpoint para consulta de programas de formación del SENA.\n\n**Estados**:\n- 0: ACTIVO (puede usarse en fichas)\n- 1: INACTIVO (no disponible)\n\n**Niveles de programa**:\n- AUXILIAR, TECNICO, TECNOLOGO, OPERARIO\n\n**Modalidades administrativas**:\n- PRESENCIAL, VIRTUAL_DISTANCIA\n\n**Permisos**:\n- Consulta: ETAPA PRODUCTIVA VIRTUAL, ETAPA PRODUCTIVA PRESENCIAL",
+			"item": [
+				{
+					"name": "LISTAR Programas",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/programs/listPrograms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"programs",
+								"listPrograms"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "0",
+									"description": "Filtrar por estado (0=activo, 1=inactivo)",
+									"disabled": true
+								},
+								{
+									"key": "program_level",
+									"value": "TECNOLOGO",
+									"description": "Filtrar por nivel (AUXILIAR, TECNICO, TECNOLOGO, OPERARIO)",
+									"disabled": true
+								},
+								{
+									"key": "admin_modality",
+									"value": "PRESENCIAL",
+									"description": "Filtrar por modalidad (PRESENCIAL, VIRTUAL_DISTANCIA)",
+									"disabled": true
+								},
+								{
+									"key": "code",
+									"value": "228116",
+									"description": "Buscar por código (case insensitive)",
+									"disabled": true
+								},
+								{
+									"key": "version",
+									"value": "1",
+									"description": "Buscar por versión (case insensitive)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "### 📋 Listar Programas de Formación\n\nObtiene lista de programas con filtros opcionales.\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ETAPA PRODUCTIVA VIRTUAL, ETAPA PRODUCTIVA PRESENCIAL\n\n#### 🔍 Query Parameters (Todos opcionales):\n- `status`: Filtrar por estado\n  - 0: ACTIVO\n  - 1: INACTIVO\n- `program_level`: Filtrar por nivel\n  - AUXILIAR\n  - TECNICO\n  - TECNOLOGO\n  - OPERARIO\n- `admin_modality`: Filtrar por modalidad administrativa\n  - PRESENCIAL\n  - VIRTUAL_DISTANCIA\n- `code`: Buscar por código (case insensitive)\n- `version`: Buscar por versión (case insensitive)\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": [\n    {\n      \"_id\": \"64a48c9862abd793f5ce7e1e\",\n      \"code\": \"228116\",\n      \"name\": \"IMPLEMENTACION DE INFRAESTRUCTURA DE TECNOLOGIAS DE LA INFORMACION Y LA COMUNICACION\",\n      \"version\": \"1\",\n      \"program_level\": \"TECNOLOGO\",\n      \"admin_modality\": \"PRESENCIAL\",\n      \"status\": 0,\n      \"createdAt\": \"2023-07-04T21:18:16.347Z\",\n      \"updatedAt\": \"2023-07-04T21:18:16.347Z\"\n    }\n  ]\n}\n```\n\n#### 💡 Notas:\n- Sin filtros, devuelve todos los programas\n- Los filtros se pueden combinar\n- Ordenados por fecha de creación (más recientes primero)\n- Útil para selección en formularios de fichas y registros"
+					},
+					"response": []
+				},
+				{
+					"name": "OBTENER Programa por ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/programs/getProgramById/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"programs",
+								"getProgramById",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "64a48c9862abd793f5ce7e1e"
+								}
+							]
+						},
+						"description": "### 🔍 Obtener Programa por ID\n\nObtiene la información completa de un programa específico.\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ETAPA PRODUCTIVA VIRTUAL, ETAPA PRODUCTIVA PRESENCIAL\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": {\n    \"_id\": \"64a48c9862abd793f5ce7e1e\",\n    \"code\": \"228116\",\n    \"name\": \"IMPLEMENTACION DE INFRAESTRUCTURA DE TECNOLOGIAS DE LA INFORMACION Y LA COMUNICACION\",\n    \"version\": \"1\",\n    \"program_level\": \"TECNOLOGO\",\n    \"admin_modality\": \"PRESENCIAL\",\n    \"status\": 0,\n    \"createdAt\": \"2023-07-04T21:18:16.347Z\",\n    \"updatedAt\": \"2023-07-04T21:18:16.347Z\"\n  }\n}\n```\n\n#### 💡 Notas:\n- Útil para obtener detalles completos de un programa\n- Valida que el ID exista antes de consultar"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📝 REGISTRATIONS (Registros EP)",
+			"description": "Endpoints para gestión de registros de etapas productivas.\n\n**Flujo del proceso**:\n1. Aprendiz crea registro (PENDIENTE)\n2. Admin valida (APROBADO/RECHAZADO)\n3. Si aprobado, se puede crear proyecto\n\n**Estados**:\n- 0: APROBADO\n- 1: RECHAZADO\n- 3: PENDIENTE\n\n**Permisos**:\n- Crear/Actualizar: APRENDIZ\n- Listar/Validar/Eliminar: ADMIN",
+			"item": [
+				{
+					"name": "CREAR Registro EP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_aprendiz}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"registration_number\": \"REG-2025-001\",\n  \"modality_id\": \"68d4a43ea3d837b79a47523a\",\n  \"company_id\": \"68e2ce2caf5b6c3d172f3944\",\n  \"scheduled_start_date\": \"2025-11-15\",\n  \"total_requested_hours\": 864,\n  \"working_days\": 5,\n  \"daily_hours\": 8,\n  \"apprentice_observations\": \"Solicito realizar mi EP en esta empresa\",\n  \"uploaded_documents\": []\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/registrations/saveRegistration",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"registrations",
+								"saveRegistration"
+							]
+						},
+						"description": "### ➕ Crear Registro de Etapa Productiva\n\nPermite al aprendiz solicitar su registro de EP.\n\n**Método**: POST\n**Autenticación**: Requerida (JWT)\n**Permisos**: APRENDIZ\n\n#### 📥 Request Body:\n```json\n{\n  \"registration_number\": \"REG-2025-001\",                    // Requerido, único\n  \"modality_id\": \"68d4a43ea3d837b79a47523a\",              // Requerido, ObjectId válido\n  \"company_id\": \"68e2ce2caf5b6c3d172f3944\",               // Opcional (algunas modalidades no requieren)\n  \"scheduled_start_date\": \"2025-11-15\",                    // Requerido, formato YYYY-MM-DD\n  \"total_requested_hours\": 864,                            // Requerido, numérico\n  \"working_days\": 5,                                        // Opcional, por defecto 5\n  \"daily_hours\": 8,                                         // Opcional, por defecto 8\n  \"apprentice_observations\": \"Solicito realizar...\",       // Opcional\n  \"uploaded_documents\": []                                  // Opcional, array\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Registro creado correctamente\"\n}\n```\n\n#### ⚠️ Validaciones:\n- El número de registro debe ser único\n- El aprendiz no debe tener otro registro activo (PENDIENTE o APROBADO)\n- La modalidad debe existir y estar activa\n- Si se proporciona empresa, debe existir y estar activa\n- La fecha debe ser futura\n\n#### 💡 Notas:\n- El registro se crea con estado PENDIENTE (3)\n- El apprentice_id se toma del token JWT\n- Se registra en el log de auditoría\n- El admin debe validarlo posteriormente"
+					},
+					"response": []
+				},
+				{
+					"name": "LISTAR Registros",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/registrations/listRegistrations?registration_status=3",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"registrations",
+								"listRegistrations"
+							],
+							"query": [
+								{
+									"key": "registration_number",
+									"value": "REG-2025-001",
+									"description": "Filtrar por número de registro",
+									"disabled": true
+								},
+								{
+									"key": "apprentice_id",
+									"value": "68db0ea84fbe82bc4d10eff4",
+									"description": "Filtrar por ID de aprendiz",
+									"disabled": true
+								},
+								{
+									"key": "modality_id",
+									"value": "68d4a43ea3d837b79a47523a",
+									"description": "Filtrar por modalidad",
+									"disabled": true
+								},
+								{
+									"key": "company_id",
+									"value": "68e2ce2caf5b6c3d172f3944",
+									"description": "Filtrar por empresa",
+									"disabled": true
+								},
+								{
+									"key": "registration_status",
+									"value": "3",
+									"description": "Filtrar por estado (0=APROBADO, 1=RECHAZADO, 3=PENDIENTE)"
+								}
+							]
+						},
+						"description": "### 📋 Listar Registros de EP\n\nObtiene lista de registros con filtros opcionales.\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 🔍 Query Parameters (Opcionales):\n- `registration_number`: Buscar por número de registro\n- `apprentice_id`: Filtrar por aprendiz\n- `modality_id`: Filtrar por modalidad\n- `company_id`: Filtrar por empresa\n- `registration_status`: Filtrar por estado\n  - 0: APROBADO\n  - 1: RECHAZADO\n  - 3: PENDIENTE\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": [\n    {\n      \"_id\": \"68e473ae9d2b5322db11e01f\",\n      \"registration_number\": \"REG-2025-001\",\n      \"apprentice_id\": {\n        \"_id\": \"...\",\n        \"firstName\": \"JUAN\",\n        \"lastName\": \"PÉREZ\",\n        \"documentNumber\": \"123456789\"\n      },\n      \"modality_id\": {\n        \"_id\": \"...\",\n        \"name\": \"CONTRATO DE APRENDIZAJE\"\n      },\n      \"company_id\": {\n        \"_id\": \"...\",\n        \"name\": \"TECH SOLUTIONS S.A.S.\"\n      },\n      \"registration_date\": \"2025-10-05T10:00:00.000Z\",\n      \"scheduled_start_date\": \"2025-11-15T00:00:00.000Z\",\n      \"total_requested_hours\": 864,\n      \"working_days\": 5,\n      \"daily_hours\": 8,\n      \"registration_status\": 3,\n      \"apprentice_observations\": [\n        {\n          \"descripcion\": \"SOLICITO REALIZAR MI EP...\",\n          \"escrito_por\": \"APRENDIZ\",\n          \"fecha\": \"2025-10-05T10:00:00.000Z\"\n        }\n      ],\n      \"admin_observations\": [],\n      \"uploaded_documents\": [],\n      \"validated_by_id\": null,\n      \"validation_date\": null,\n      \"createdAt\": \"2025-10-05T10:00:00.000Z\",\n      \"updatedAt\": \"2025-10-05T10:00:00.000Z\"\n    }\n  ]\n}\n```\n\n#### 💡 Notas:\n- Sin filtros, devuelve todos los registros\n- Ordenados por fecha de creación (más recientes primero)\n- Incluye populate de aprendiz, modalidad y empresa\n- Útil para dashboard de aprobaciones"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTUALIZAR Registro",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_aprendiz}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"scheduled_start_date\": \"2025-12-01\",\n  \"total_requested_hours\": 900,\n  \"working_days\": 6,\n  \"daily_hours\": 8,\n  \"apprentice_observations\": \"Actualización de horario: ahora incluye sábados\",\n  \"uploaded_documents\": [\"documento1.pdf\", \"documento2.pdf\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/registrations/updateRegistration/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"registrations",
+								"updateRegistration",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e473ae9d2b5322db11e01f"
+								}
+							]
+						},
+						"description": "### ✏️ Actualizar Registro de EP\n\nPermite al aprendiz actualizar su registro antes de ser validado.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: APRENDIZ\n\n#### 📥 Request Body (Todos opcionales):\n```json\n{\n  \"scheduled_start_date\": \"2025-12-01\",             // Opcional\n  \"total_requested_hours\": 900,                      // Opcional\n  \"working_days\": 6,                                  // Opcional\n  \"daily_hours\": 8,                                   // Opcional\n  \"apprentice_observations\": \"Actualización...\",     // Opcional, se agrega al array\n  \"uploaded_documents\": [\"doc1.pdf\", \"doc2.pdf\"]    // Opcional\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Registro actualizado correctamente\"\n}\n```\n\n#### ⚠️ Notas:\n- Solo el aprendiz propietario puede actualizar\n- Las nuevas observaciones se AGREGAN al array existente\n- NO se pueden cambiar: modalidad, empresa, número de registro\n- Los documentos se REEMPLAZAN (no se agregan)\n- Se registra en el log con datos previos y nuevos"
+					},
+					"response": []
+				},
+				{
+					"name": "VALIDAR Registro (APROBAR)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"registration_status\": 0,\n  \"admin_observations\": \"Documentos completos y verificados. Registro aprobado para iniciar etapa productiva.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/registrations/validateRegistration/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"registrations",
+								"validateRegistration",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e473ae9d2b5322db11e01f"
+								}
+							]
+						},
+						"description": "### ✅ Aprobar Registro de EP\n\nPermite al coordinador aprobar un registro.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📥 Request Body:\n```json\n{\n  \"registration_status\": 0,                              // 0 = APROBADO\n  \"admin_observations\": \"Documentos completos...\"        // Opcional pero recomendado\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Registro validado correctamente\"\n}\n```\n\n#### 💡 Efectos:\n- Cambia `registration_status` a 0 (APROBADO)\n- Registra la fecha de validación\n- Guarda el ID del usuario que validó\n- Agrega observación al historial\n- Permite crear proyecto posteriormente\n- Se registra en el log de auditoría"
+					},
+					"response": []
+				},
+				{
+					"name": "VALIDAR Registro (RECHAZAR)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"registration_status\": 1,\n  \"admin_observations\": \"Faltan documentos: carta de presentación y acuerdo de aprendizaje firmado. Por favor completar y volver a solicitar.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/registrations/validateRegistration/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"registrations",
+								"validateRegistration",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e473ae9d2b5322db11e01f"
+								}
+							]
+						},
+						"description": "### ❌ Rechazar Registro de EP\n\nPermite al coordinador rechazar un registro.\n\n**Método**: PUT\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📥 Request Body:\n```json\n{\n  \"registration_status\": 1,                              // 1 = RECHAZADO\n  \"admin_observations\": \"Faltan documentos...\"           // Requerido, explicar motivo\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Registro validado correctamente\"\n}\n```\n\n#### 💡 Efectos:\n- Cambia `registration_status` a 1 (RECHAZADO)\n- Es MUY IMPORTANTE incluir observaciones detalladas\n- El aprendiz puede ver las observaciones\n- Puede crear un nuevo registro después"
+					},
+					"response": []
+				},
+				{
+					"name": "ELIMINAR Registro",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/registrations/deleteRegistration/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"registrations",
+								"deleteRegistration",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e473ae9d2b5322db11e01f"
+								}
+							]
+						},
+						"description": "### 🗑️ Eliminar Registro\n\nElimina permanentemente un registro de EP.\n\n**Método**: DELETE\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Registro eliminado correctamente\"\n}\n```\n\n#### ⚠️ ADVERTENCIA:\n- Acción PERMANENTE\n- No eliminar registros con proyectos asociados\n- Considerar rechazar en lugar de eliminar\n- Se registra en el log de auditoría"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "⚙️ PARAMETERS (Parámetros del Sistema)",
+			"description": "Endpoints para gestión de parámetros configurables del sistema.\n\n**Tipos de parámetros**:\n- STRING: Texto\n- NUMBER: Numérico\n- BOOLEAN: Verdadero/Falso\n- DATE: Fecha\n\n**Categorías**:\n- SYSTEM: Configuración del sistema\n- ACADEMIC: Configuración académica\n- EMAIL: Configuración de email\n- LOGBOOK: Configuración de bitácora\n- SECURITY: Configuración de seguridad\n- FILES: Configuración de archivos\n\n**Permisos**: Todos los endpoints requieren autenticación",
+			"item": [
+				{
+					"name": "LISTAR Parámetros",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/parameters/listParameters",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"parameters",
+								"listParameters"
+							]
+						},
+						"description": "### 📋 Listar Todos los Parámetros\n\nObtiene todos los parámetros del sistema.\n\n**Método**: GET\n**Autenticación**: No requiere\n**Permisos**: Público\n\n#### 📤 Response (200 OK):\n```json\n[\n  {\n    \"_id\": \"68e2bf71fe0153e33279e815\",\n    \"name\": \"MAX_FILE_SIZE_MB\",\n    \"value\": 10,\n    \"type\": \"NUMBER\",\n    \"description\": \"Tamaño máximo de archivo en MB\",\n    \"category\": \"FILES\",\n    \"status\": 0,\n    \"createdAt\": \"2025-10-01T...\",\n    \"updatedAt\": \"2025-10-01T...\"\n  }\n]\n```\n\n#### 💡 Notas:\n- Ordenados por fecha de creación (más recientes primero)\n- Incluye activos e inactivos"
+					},
+					"response": []
+				},
+				{
+					"name": "FILTRAR Parámetros",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/parameters/filterParameters?type=NUMBER&category=FILES&status=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"parameters",
+								"filterParameters"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "MAX_FILE",
+									"description": "Buscar por nombre (parcial)",
+									"disabled": true
+								},
+								{
+									"key": "type",
+									"value": "NUMBER",
+									"description": "Filtrar por tipo (STRING, NUMBER, BOOLEAN, DATE)"
+								},
+								{
+									"key": "category",
+									"value": "FILES",
+									"description": "Filtrar por categoría"
+								},
+								{
+									"key": "status",
+									"value": "0",
+									"description": "Filtrar por estado (0=activo, 1=inactivo)"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Página (default: 1)",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "50",
+									"description": "Registros por página (default: 50)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "### 🔍 Filtrar Parámetros\n\nBusca parámetros con filtros avanzados y paginación.\n\n**Método**: GET\n**Autenticación**: No requiere\n**Permisos**: Público\n\n#### 🔍 Query Parameters (Opcionales):\n- `name`: Buscar por nombre (case insensitive)\n- `type`: STRING, NUMBER, BOOLEAN, DATE\n- `category`: SYSTEM, ACADEMIC, EMAIL, LOGBOOK, SECURITY, FILES\n- `status`: 0 (activo), 1 (inactivo), 2 (deprecado)\n- `page`: Número de página (default: 1)\n- `limit`: Registros por página (default: 50)\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"data\": [...],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 2,\n    \"total_records\": 75,\n    \"records_per_page\": 50\n  },\n  \"filters_applied\": {\n    \"type\": \"NUMBER\",\n    \"category\": \"FILES\",\n    \"status\": 0\n  }\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "CREAR Parámetro",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"LOGBOOK_MIN_ENTRIES_WEEK\",\n  \"value\": 3,\n  \"type\": \"NUMBER\",\n  \"description\": \"Número mínimo de entradas de bitácora requeridas por semana\",\n  \"category\": \"LOGBOOK\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/parameters/createParameter",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"parameters",
+								"createParameter"
+							]
+						},
+						"description": "### ➕ Crear Parámetro\n\nCrea un nuevo parámetro de configuración.\n\n**Método**: POST\n**Autenticación**: Requerida (implícito)\n**Permisos**: ADMIN\n\n#### 📥 Request Body:\n```json\n{\n  \"name\": \"LOGBOOK_MIN_ENTRIES_WEEK\",                        // Requerido, único, 3-50 caracteres\n  \"value\": 3,                                                  // Requerido, tipo según 'type'\n  \"type\": \"NUMBER\",                                            // Requerido (STRING, NUMBER, BOOLEAN, DATE)\n  \"description\": \"Número mínimo de entradas...\",              // Requerido, 10-200 caracteres\n  \"category\": \"LOGBOOK\"                                        // Requerido\n}\n```\n\n#### 🎯 Tipos y Valores:\n```javascript\n// STRING\n{ \"value\": \"texto cualquiera\", \"type\": \"STRING\" }\n\n// NUMBER\n{ \"value\": 42, \"type\": \"NUMBER\" }\n\n// BOOLEAN\n{ \"value\": true, \"type\": \"BOOLEAN\" }\n\n// DATE\n{ \"value\": \"2025-12-31T23:59:59.000Z\", \"type\": \"DATE\" }\n```\n\n#### 📤 Response (201 OK):\n```json\n{\n  \"msg\": \"Parameter created successfully\",\n  \"data\": {...}\n}\n```\n\n#### ⚠️ Validaciones:\n- El nombre debe ser único\n- El valor debe coincidir con el tipo\n- Nombre: 3-50 caracteres\n- Descripción: 10-200 caracteres\n- El nombre se convierte a MAYÚSCULAS"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTUALIZAR Parámetro",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"LOGBOOK_MIN_ENTRIES_WEEK\",\n  \"value\": 5,\n  \"type\": \"NUMBER\",\n  \"description\": \"Número mínimo de entradas de bitácora (actualizado)\",\n  \"category\": \"LOGBOOK\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/parameters/updateParameter/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"parameters",
+								"updateParameter",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e2bf71fe0153e33279e815"
+								}
+							]
+						},
+						"description": "### ✏️ Actualizar Parámetro\n\nActualiza un parámetro existente.\n\n**Método**: PUT\n**Autenticación**: Requerida\n**Permisos**: ADMIN\n\n#### 📥 Request Body (Todos opcionales):\nSe pueden enviar solo los campos a actualizar.\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Parameter updated successfully\",\n  \"data\": {...}\n}\n```\n\n#### ⚠️ Validaciones:\n- Si se cambia el nombre, el nuevo debe ser único\n- El valor debe coincidir con el tipo\n- Mismas validaciones que crear"
+					},
+					"response": []
+				},
+				{
+					"name": "ACTUALIZAR Estado de Parámetro",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/parameters/updateParameterStatus/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"parameters",
+								"updateParameterStatus",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e2bf71fe0153e33279e815"
+								}
+							]
+						},
+						"description": "### 🔄 Actualizar Estado de Parámetro\n\nCambia el estado de activación de un parámetro.\n\n**Método**: PUT\n**Autenticación**: Requerida\n**Permisos**: ADMIN\n\n#### 📥 Request Body:\n```json\n{\n  \"status\": 1    // 0=inactivo, 1=activo, 2=deprecado\n}\n```\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Parameter status updated successfully\",\n  \"data\": {...}\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "ELIMINAR Parámetro",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/parameters/deleteParameter/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"parameters",
+								"deleteParameter",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "68e2bf30fe0153e33279e80f"
+								}
+							]
+						},
+						"description": "### 🗑️ Eliminar Parámetro\n\nElimina permanentemente un parámetro.\n\n**Método**: DELETE\n**Autenticación**: Requerida\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": \"Parameter deleted successfully\",\n  \"data\": {...}\n}\n```\n\n#### ⚠️ Restricciones:\n- No se pueden eliminar parámetros críticos:\n  - EMAIL_FROM_ADDRESS\n  - SESSION_TIMEOUT_MINUTES\n  - MAX_FILE_SIZE_MB\n- No se pueden eliminar parámetros activos (status=1)\n- Primero desactivar, luego eliminar"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📊 LOGS (Auditoría)",
+			"description": "Endpoints para consultar logs de auditoría del sistema.\n\n**Información registrada**:\n- Quién: Usuario que realizó la acción\n- Qué: Tipo de acción (CREATE, UPDATE, DELETE, etc.)\n- Cuándo: Fecha y hora\n- Dónde: Tabla/módulo afectado\n- Datos: Estado anterior y nuevo (para UPDATE)\n- IP: Dirección IP del cliente\n\n**Permisos**: Solo ADMIN",
+			"item": [
+				{
+					"name": "LISTAR Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/logs/listLogs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"logs",
+								"listLogs"
+							]
+						},
+						"description": "### 📋 Listar Todos los Logs\n\nObtiene todos los registros de auditoría.\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n[\n  {\n    \"_id\": \"...\",\n    \"action\": \"CREATE\",\n    \"affected_table\": \"APPRENTICES\",\n    \"affected_record_id\": \"68db0ea84fbe82bc4d10eff4\",\n    \"previous_data\": null,\n    \"new_data\": {\n      \"documentNumber\": \"123456789\",\n      \"firstName\": \"JUAN\",\n      \"lastName\": \"PÉREZ\"\n    },\n    \"user\": \"ADMIN ETAPAS\",\n    \"user_id\": \"66f1d19b71e7d8e0b4b6418f\",\n    \"module\": \"APPRENTICES\",\n    \"level\": \"INFO\",\n    \"description\": \"Nuevo aprendiz creado\",\n    \"ip_address\": \"192.168.1.100\",\n    \"createdAt\": \"2025-10-05T10:00:00.000Z\"\n  }\n]\n```\n\n#### 💡 Notas:\n- Ordenados por fecha (más recientes primero)\n- No hay paginación en este endpoint\n- Para filtros usar `/filterLogs`"
+					},
+					"response": []
+				},
+				{
+					"name": "FILTRAR Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/logs/filterLogs?action=UPDATE&module=APPRENTICES&level=INFO&page=1&limit=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"logs",
+								"filterLogs"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "UPDATE",
+									"description": "Tipo de acción"
+								},
+								{
+									"key": "module",
+									"value": "APPRENTICES",
+									"description": "Módulo del sistema"
+								},
+								{
+									"key": "level",
+									"value": "INFO",
+									"description": "Nivel de severidad"
+								},
+								{
+									"key": "affected_table",
+									"value": "APPRENTICES",
+									"description": "Tabla afectada",
+									"disabled": true
+								},
+								{
+									"key": "user",
+									"value": "Juan",
+									"description": "Buscar por nombre de usuario (parcial)",
+									"disabled": true
+								},
+								{
+									"key": "start_date",
+									"value": "2025-10-01",
+									"description": "Fecha inicial (YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "end_date",
+									"value": "2025-10-31",
+									"description": "Fecha final (YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Número de página"
+								},
+								{
+									"key": "limit",
+									"value": "50",
+									"description": "Registros por página (default: 50)"
+								}
+							]
+						},
+						"description": "### 🔍 Filtrar Logs de Auditoría\n\nBusca logs con múltiples filtros y paginación.\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 🔍 Query Parameters (Opcionales):\n\n**Acciones disponibles**:\n- CREATE, UPDATE, DELETE, LOGIN, LOGOUT, VIEW, EXPORT, IMPORT\n- ASSIGN, APPROVE, REJECT, SUBMIT, ACTIVATE, DEACTIVATE\n- RESET_PASSWORD, EVALUATE, COMMENT, BACKUP, RESTORE, ERROR\n\n**Módulos disponibles**:\n- APPRENTICES, INSTRUCTORS, COMPANIES, PROJECTS, ACTIVITIES\n- TRACKINGS, PS_MODALITIES, PARAMETERS, USERS, REPORTS\n- LOGS, SYSTEM, GENERAL\n\n**Niveles disponibles**:\n- INFO: Información general\n- WARNING: Advertencias\n- ERROR: Errores\n- CRITICAL: Errores críticos\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"data\": [\n    {\n      \"_id\": \"...\",\n      \"action\": \"UPDATE\",\n      \"affected_table\": \"APPRENTICES\",\n      \"affected_record_id\": \"68db0ea84fbe82bc4d10eff4\",\n      \"previous_data\": {\n        \"phone\": \"3001234567\",\n        \"email\": { \"personal\": \"old@gmail.com\" }\n      },\n      \"new_data\": {\n        \"phone\": \"3009998888\",\n        \"email\": { \"personal\": \"new@gmail.com\" }\n      },\n      \"user\": \"JUAN PÉREZ\",\n      \"user_id\": {\n        \"_id\": \"...\",\n        \"name\": \"JUAN PÉREZ\",\n        \"email\": \"juan@example.com\"\n      },\n      \"module\": \"APPRENTICES\",\n      \"level\": \"INFO\",\n      \"description\": \"Aprendiz actualizado\",\n      \"ip_address\": \"192.168.1.100\",\n      \"createdAt\": \"2025-10-05T10:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 5,\n    \"total_records\": 243,\n    \"records_per_page\": 50\n  },\n  \"filters_applied\": {\n    \"action\": \"UPDATE\",\n    \"module\": \"APPRENTICES\",\n    \"level\": \"INFO\"\n  }\n}\n```\n\n#### 💡 Casos de Uso:\n```javascript\n// Ver todas las acciones de un usuario\n/logs/filterLogs?user=Juan+Pérez\n\n// Auditar cambios en aprendices hoy\n/logs/filterLogs?module=APPRENTICES&start_date=2025-10-06&end_date=2025-10-06\n\n// Buscar errores críticos\n/logs/filterLogs?level=CRITICAL\n\n// Ver eliminaciones\n/logs/filterLogs?action=DELETE\n\n// Auditar logins\n/logs/filterLogs?action=LOGIN&start_date=2025-10-01\n```"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📰 NEWS (Novedades SOFIA Plus)",
+			"description": "Endpoints para gestión de novedades importadas desde SOFIA Plus.\n\n**Nota**: Estos endpoints están en desarrollo y pueden cambiar.\n\n**Permisos**: Solo ADMIN",
+			"item": [
+				{
+					"name": "LISTAR Novedades",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/news/listNews",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"news",
+								"listNews"
+							]
+						},
+						"description": "### 📋 Listar Novedades\n\nObtiene las novedades registradas (limitado a 50).\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": [\n    {\n      \"_id\": \"...\",\n      \"code\": 12345,\n      \"tpnew\": \"RETIRO VOLUNTARIO\",\n      \"document\": \"123456789\",\n      \"name\": \"JUAN PÉREZ\",\n      \"email\": \"juan@example.com\",\n      \"phone\": \"3001234567\",\n      \"fiche\": \"...\",\n      \"coordination\": \"...\",\n      \"datesofia\": \"2025-10-01T00:00:00.000Z\",\n      \"processed\": false,\n      \"state\": \"REGISTRADA\",\n      \"createdAt\": \"2025-10-01T10:00:00.000Z\"\n    }\n  ]\n}\n```\n\n#### 💡 Nota:\n- Limitado a 50 registros\n- Sin paginación actualmente\n- Datos importados de SOFIA Plus"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📑 FICHES (Fichas de Formación)",
+			"description": "Endpoints para consultar información de fichas de formación.\n\n**Permisos**: ADMIN, INSTRUCTOR",
+			"item": [
+				{
+					"name": "LISTAR Fichas",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-token",
+								"value": "{{token_admin}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/fiches/listFiche?number=2926076",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"fiches",
+								"listFiche"
+							],
+							"query": [
+								{
+									"key": "number",
+									"value": "2926076",
+									"description": "Número de ficha"
+								}
+							]
+						},
+						"description": "### 📋 Listar Fichas\n\nObtiene información de fichas de formación.\n\n**Método**: GET\n**Autenticación**: Requerida (JWT)\n**Permisos**: ADMIN, INSTRUCTOR\n\n#### 🔍 Query Parameters (Opcionales):\n- `number`: Filtrar por número de ficha\n\n#### 📤 Response (200 OK):\n```json\n{\n  \"msg\": [\n    {\n      \"_id\": \"...\",\n      \"number\": \"2926076\",\n      \"program\": \"...\",\n      \"owner\": {\n        \"_id\": \"...\",\n        \"name\": \"INSTRUCTOR LÍDER\",\n        \"email\": \"instructor@sena.edu.co\"\n      },\n      \"coordination\": \"...\",\n      \"fstart\": \"2024-01-15T00:00:00.000Z\",\n      \"fend\": \"2025-12-15T00:00:00.000Z\",\n      \"status\": 0,\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ]\n}\n```\n\n#### 💡 Notas:\n- Incluye populate del instructor owner\n- Sin filtros, devuelve todas las fichas"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "token_aprendiz",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "token_admin",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "token_instructor",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000/api",
+			"type": "string"
+		},
+		{
+			"key": "base_url_desplegado",
+			"value": "https://repfora-ep-backend.onrender.com/api",
+			"type": "string"
+		}
+	]
+}
